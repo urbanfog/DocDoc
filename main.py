@@ -10,8 +10,13 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, cur
 from forms import LoginForm, RegisterForm, CreatePostForm, CommentForm
 from flask_gravatar import Gravatar
 
+# Load ENV variables
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv(), override=True)
+API_SECRET_KEY = os.getenv('GOOGLE_MAPS_KEY')
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+app.config['SECRET_KEY'] = API_SECRET_KEY
 ckeditor = CKEditor(app)
 Bootstrap(app)
 gravatar = Gravatar(app, size=100, rating='g', default='retro',
