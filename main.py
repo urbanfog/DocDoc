@@ -10,12 +10,17 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, cur
 from forms import LoginForm, RegisterForm, CreatePostForm, CommentForm
 import os
 
-# Load ENV variables
-from dotenv import load_dotenv, find_dotenv
-load_dotenv(find_dotenv(), override=True)
-API_SECRET_KEY = os.getenv('GOOGLE_MAPS_KEY')
 
 app = Flask(__name__)
+
+is_prod = os.environ.get('IS_HEROKU', None)
+if is_prod:
+    API_SECRET_KEY = os.getenv('API_SECRET_KEY')
+else:
+    from dotenv import load_dotenv, find_dotenv
+    load_dotenv(find_dotenv(), override=True)
+    API_SECRET_KEY = os.getenv('API_SECRET_KEY')
+
 app.config['SECRET_KEY'] = API_SECRET_KEY
 ckeditor = CKEditor(app)
 Bootstrap(app)
