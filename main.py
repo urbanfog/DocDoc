@@ -92,10 +92,14 @@ def admin_only(f):
     return decorated_function
 
 
+@app.route('/elements')
+def elements():
+    return render_template("elements.html")
+
+
 @app.route('/')
-def get_all_documents():
-    documents = Document.query.all()
-    return render_template("index.html", all_documents=documents, current_user=current_user)
+def landing():
+    return render_template("landing.html")
 
 
 @app.route('/register', methods=["GET", "POST"])
@@ -154,20 +158,35 @@ def logout():
     return redirect(url_for('get_all_documents'))
 
 
+@app.route("/user/<int:user_id>", methods=["GET", "POST"])
+@login_required
+def edit_user(user_id):
+    user = User.query.get(user_id)
+    edit_form = RegisterForm(
+        name=user.name,
+        email=user.email,
+        password=user.password,
+    )
+    if edit_form.validate_on_submit():
+        user.name = edit_form.name.data
+        user.email = edit_form.email.data
+        user.password = edit_form.password.data
+        db.session.commit()
+        return redirect(url_for("show_user", document_id=user.id))
+
+    return render_template("register.html", form=edit_form, is_edit=True, current_user=current_user)
+
+
+@app.route('/documents')
+def get_all_documents():
+    documents = Document.query.all()
+    return render_template("index.html", all_documents=documents, current_user=current_user)
+
+
 @app.route("/document/<int:document_id>", methods=["GET", "POST"])
 def show_document(document_id):
     requested_document = Document.query.get(document_id)
     return render_template("document.html", document=requested_document, current_user=current_user)
-
-
-@app.route("/about")
-def about():
-    return render_template("about.html", current_user=current_user)
-
-
-@app.route("/contact")
-def contact():
-    return render_template("contact.html", current_user=current_user)
 
 
 @app.route("/new-document", methods=["GET", "POST"])
@@ -213,6 +232,16 @@ def delete_document(document_id):
     db.session.delete(document_to_delete)
     db.session.commit()
     return redirect(url_for('get_all_documents'))
+
+
+@app.route("/about")
+def about():
+    return render_template("about.html", current_user=current_user)
+
+
+@app.route("/contact")
+def contact():
+    return render_template("contact.html", current_user=current_user)
 
 
 if __name__ == "__main__":
