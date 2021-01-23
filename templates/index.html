@@ -19,7 +19,11 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
-        {% for doc in all_documents %}
+        {% if not results %}
+        <h2 class="doc-title">No documents found</h2>
+        {% endif %}
+        {% for doc in results %}
+
         <div class="doc-preview">
           <a href="{{ url_for('show_document', document_id=doc.id) }}">
             <h2 class="doc-title">

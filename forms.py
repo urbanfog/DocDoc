@@ -23,3 +23,7 @@ class LoginForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     submit = SubmitField("Let Me In!")
+
+
+class SearchForm(FlaskForm):
+    search_query = StringField("Search", validators=[DataRequired()])

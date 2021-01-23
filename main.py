@@ -6,10 +6,13 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
+from sqlalchemy import and_, or_, not_
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
-from forms import LoginForm, RegisterForm, CreateDocumentForm
+from forms import LoginForm, RegisterForm, CreateDocumentForm, SearchForm
 import os
 
+# TODO
+# Search doc attributes
 
 app = Flask(__name__)
 
@@ -96,10 +99,25 @@ def admin_only(f):
 def elements():
     return render_template("elements.html")
 
+# TODO get search working
 
-@app.route('/')
+
+@app.route('/', methods=["GET"])
 def landing():
-    return render_template("landing.html")
+    form = SearchForm()
+    if form.validate():
+        search_string = form.search_query.data
+        results = Document.query.filter(
+            # or_(
+            # Document.title.like(f"%search_string%"),
+            Document.description.like('%' + search_string + '%'),
+            # )
+        )
+        print(search_string)
+        print(results)
+        return redirect(url_for("get_all_documents", results=results))
+    print(form.errors)
+    return render_template("landing.html", form=form)
 
 
 @app.route('/register', methods=["GET", "POST"])

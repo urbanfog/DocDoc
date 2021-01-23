@@ -10,6 +10,9 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="../static/assets/css/main.css" />
+		{% import "bootstrap/wtf.html" as wtf %}
+
+		{% block content %}
 	</head>
 	<body class="is-preload">
 
@@ -22,7 +25,7 @@
 
 							<!-- Header -->
 								<header id="header">
-									<a href="index.html" class="logo"><strong>DocZilla</strong></a>
+									<h1><a href={{ url_for('landing') }} class="logo"></a>DocZilla</h1>
 									<ul class="icons">
 										{% if not current_user.is_authenticated: %}
 											<li><a href={{ url_for('login') }} class="button big">Login</a></li>
@@ -93,10 +96,10 @@
 							<!-- Section -->
 								<section>
 									<header class="major">
-										<h2>Check out the features</h2>
+										<h2>Check out some docs</h2>
 									</header>
 									<ul class="actions">
-										<li><a href={{ url_for('get_all_documents') }} class="button big">Learn More</a></li>
+										<li><a href={{ url_for('get_all_documents') }} class="button big">Documents</a></li>
 									</ul>
 
 									<!-- <div class="posts">
@@ -160,8 +163,9 @@
 
 							<!-- Search -->
 								<section id="search" class="alt">
-									<form method="post" action="#">
-										<input type="text" name="query" id="query" placeholder="Search" />
+									<form method="get" action="/">
+										{{ form.csrf_token }}
+										{{ form.search_query(id="query", placeholder="Search") }}
 									</form>
 								</section>
 
@@ -171,11 +175,11 @@
 										<h2>Menu</h2>
 									</header>
 									<ul>
-										<li><a href={{ url_for('get_all_documents') }}>Homepage</a></li>
+										<li><a href={{ url_for('landing') }}>Homepage</a></li>
 										{% if current_user.is_authenticated: %}
 											<li><a href={{ url_for('edit_user',user_id=current_user.id) }}>User Profile</a></li>
 										{% endif %}
-										<li><a href="elements.html">All Documents</a></li>
+										<li><a href={{ url_for('get_all_documents') }}>All Documents</a></li>
 										<!-- <li>
 											<span class="opener">Submenu</span>
 											<ul>
@@ -255,4 +259,5 @@
 			<script src="../static/assets/js/main.js"></script>
 
 	</body>
+	{% endblock %}
 </html>
