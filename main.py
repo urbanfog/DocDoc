@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, abort
+from flask import Flask, render_template, redirect, url_for, flash, abort, request, send_from_directory
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
 from datetime import date, datetime
@@ -8,13 +8,18 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
 from sqlalchemy import and_, or_, not_
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
-from forms import LoginForm, RegisterForm, CreateDocumentForm, SearchForm
+from werkzeug.utils import secure_filename
+from forms import FileUploadForm, LoginForm, RegisterForm, CreateDocumentForm, SearchForm
 import os
 
 # TODO
 # Search doc attributes
 
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+
+
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
 
 is_prod = os.environ.get('IS_HEROKU', None)
 if is_prod:
@@ -210,6 +215,25 @@ def show_document(document_id):
 @app.route("/new-document", methods=["GET", "POST"])
 def add_document():
     form = CreateDocumentForm()
+    if request.method == 'POST':
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit an empty part without filename
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(MYDIR + "/" +
+                      app.config['UPLOAD_FOLDER'], filename))
+            return redirect(url_for('uploaded_file',
+                                    filename=filename))
+    return
+
     if form.validate_on_submit():
         new_document = Document(
             title=form.title.data,
@@ -260,6 +284,21 @@ def about():
 @app.route("/contact")
 def contact():
     return render_template("contact.html", current_user=current_user)
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route('/', methods=['GET', 'POST'])
+def upload_file():
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(os.path.join(MYDIR + "/" + app.config['UPLOAD_FOLDER'],
+                               filename)
 
 
 if __name__ == "__main__":

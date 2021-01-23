@@ -13,9 +13,8 @@
             {% if is_edit: %}
             <h1>Edit Document</h1>
             {% else: %}
-            <h1>New Document</h1>
+            <h1>Upload New Document</h1>
             {% endif %}
-            <span class="subheading">You're going to make a great Document!</span>
           </div>
         </div>
       </div>
@@ -25,6 +24,11 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
+        <form method=post enctype=multipart/form-data>
+          <input type=file name=file>
+          <input type=submit value=Upload>
+        </form>
+
         {{ ckeditor.load() }}
         {{ ckeditor.config(name='body') }}
         {{ wtf.quick_form(form, novalidate=True, button_map={"submit": "primary"}) }}
