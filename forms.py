@@ -1,14 +1,14 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileRequired
 from wtforms import StringField, SubmitField, PasswordField
 from wtforms.validators import DataRequired, URL
-from flask_ckeditor import CKEditorField
 
 
 # WTForm
 class CreateDocumentForm(FlaskForm):
     title = StringField("Document Title", validators=[DataRequired()])
     description = StringField("Description", validators=[DataRequired()])
-    file_url = StringField("File URL", validators=[DataRequired(), URL()])
+    file_url = FileField("Document", validators=[FileRequired()])
     submit = SubmitField("Add Document")
 
 

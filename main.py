@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, abort, request, send_from_directory
+from flask import Flask, render_template, redirect, url_for, flash, abort, request, send_from_directory, send_file, Response
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
 from datetime import date, datetime
@@ -9,14 +9,21 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import and_, or_, not_
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from werkzeug.utils import secure_filename
-from forms import FileUploadForm, LoginForm, RegisterForm, CreateDocumentForm, SearchForm
+from forms import LoginForm, RegisterForm, CreateDocumentForm, SearchForm
 import os
+from storage import upload_file, download_file, list_files
+import boto3
 
 # TODO
 # Search doc attributes
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
+# AWS setup
+AWS_BUCKET_NAME = 'docdoczilla'
+UPLOAD_FOLDER = 'uploads'
+# AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+# AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
@@ -47,25 +54,38 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+)
+
 # CONFIGURE TABLE
+
+
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
     name = db.Column(db.String(100))
-    documents = relationship("Document", back_populates="created_by")
+    documents = db.relationship("Document", backref="created_by")
+
+    def __repr__(self):
+        return '<User {}>'.format(self.name)
 
 
 class Document(db.Model):
     __tablename__ = "documents"
     id = db.Column(db.Integer, primary_key=True)
-    create_user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    created_by = relationship("User", back_populates="documents")
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     title = db.Column(db.String(250), unique=True, nullable=False)
     description = db.Column(db.String(250), nullable=False)
     upload_date = db.Column(db.String(250), nullable=False)
     file_url = db.Column(db.String(250), nullable=False)
+
+    def __repr__(self):
+        return '<Document {}>'.format(self.title)
 
 
 # DB seed stuff
@@ -74,17 +94,17 @@ class Document(db.Model):
 
 # new_user = User(
 #     id=1,
-#     email='Test',
-#     name='Admin',
-#     password='Test',
+#     email='james@james.com',
+#     name='james',
+#     password='james',
 # )
 
 # new_doc = Document(
-#     create_user_id=1,
+#     user_id=1,
 #     title='Test',
 #     description='Test',
 #     upload_date=datetime.today(),
-#     file_url='wwww.google.com',
+#     file_url='https://docdoczilla.s3-us-west-2.amazonaws.com/coffee.jpg',
 # )
 # db.session.add(new_user)
 # db.session.add(new_doc)
@@ -212,35 +232,65 @@ def show_document(document_id):
     return render_template("document.html", document=requested_document, current_user=current_user)
 
 
-@app.route("/new-document", methods=["GET", "POST"])
+@app.route("/storage")
+def storage():
+    contents = list_files("docdoczilla")
+    print(contents)
+    return render_template('storage.html', contents=contents)
+
+
+def validate_and_upload(file):
+    file.filename = secure_filename(file.filename)
+    output = upload_file_to_s3(file, AWS_BUCKET_NAME)
+    print(file.filename)
+    return str(output)
+
+
+def upload_file_to_s3(file, bucket_name):
+    """
+    Docs: http://boto3.readthedocs.io/en/latest/guide/s3.html
+    """
+    try:
+        s3.upload_fileobj(
+            file,
+            bucket_name,
+            file.filename,
+            ExtraArgs={
+                "ContentType": file.content_type
+            }
+        )
+    except Exception as e:
+        print("Something Happened: ", e)
+        return e
+    return f"https://{AWS_BUCKET_NAME}.s3-us-west-2.amazonaws.com/{file.filename}"
+
+
+@ app.route("/download", methods=['POST'])
+def download():
+    key = request.form['key']
+    s3_resource = boto3.resource('s3')
+    my_bucket = s3_resource.Bucket(AWS_BUCKET_NAME)
+
+    file_obj = my_bucket.Object(key).get()
+
+    return Response(
+        file_obj['Body'].read(),
+        mimetype='text/plain',
+        headers={"Content-Disposition": "attachment;filename={}".format(key)}
+    )
+
+
+@ app.route("/new-document", methods=["GET", "POST"])
 def add_document():
     form = CreateDocumentForm()
     if request.method == 'POST':
         # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        # if user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(MYDIR + "/" +
-                      app.config['UPLOAD_FOLDER'], filename))
-            return redirect(url_for('uploaded_file',
-                                    filename=filename))
-    return
-
-    if form.validate_on_submit():
         new_document = Document(
             title=form.title.data,
             description=form.description.data,
-            file_url=form.file_url.data,
-            create_user_id=current_user,
+            user_id=current_user.id,
             upload_date=date.today().strftime("%B %d, %Y"),
+            file_url=validate_and_upload(form.file_url.data),
         )
         db.session.add(new_document)
         db.session.commit()
@@ -249,7 +299,7 @@ def add_document():
     return render_template("make-document.html", form=form, current_user=current_user)
 
 
-@app.route("/edit-document/<int:document_id>", methods=["GET", "POST"])
+@ app.route("/edit-document/<int:document_id>", methods=["GET", "POST"])
 def edit_document(document_id):
     document = Document.query.get(document_id)
     edit_form = CreateDocumentForm(
@@ -267,21 +317,25 @@ def edit_document(document_id):
     return render_template("make-document.html", form=edit_form, is_edit=True, current_user=current_user)
 
 
-@app.route("/delete/<int:document_id>")
-@admin_only
+@ app.route("/delete", methods=["POST"])
 def delete_document(document_id):
-    document_to_delete = Document.query.get(document_id)
-    db.session.delete(document_to_delete)
+    doc = Document.query.get(document_id)
+    s3_key = doc.file_url
+    s3_resource = boto3.resource('s3')
+    my_bucket = s3_resource.Bucket(AWS_BUCKET_NAME)
+    my_bucket.Object(s3_key).delete()
+    db.session.delete(doc)
     db.session.commit()
+    flash('File deleted successfully')
     return redirect(url_for('get_all_documents'))
 
 
-@app.route("/about")
+@ app.route("/about")
 def about():
     return render_template("about.html", current_user=current_user)
 
 
-@app.route("/contact")
+@ app.route("/contact")
 def contact():
     return render_template("contact.html", current_user=current_user)
 
@@ -289,16 +343,6 @@ def contact():
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-@app.route('/', methods=['GET', 'POST'])
-def upload_file():
-
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(os.path.join(MYDIR + "/" + app.config['UPLOAD_FOLDER'],
-                               filename)
 
 
 if __name__ == "__main__":

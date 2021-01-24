@@ -24,14 +24,21 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
-        <form method=post enctype=multipart/form-data>
-          <input type=file name=file>
-          <input type=submit value=Upload>
-        </form>
+        <form action="/new-document" method="post" enctype="multipart/form-data" novalidate="True">
+          {% with messages = get_flashed_messages() %}
+            {% if messages %}
+              {% for message in messages %}
+              <p>{{ message }}</p>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
 
-        {{ ckeditor.load() }}
-        {{ ckeditor.config(name='body') }}
-        {{ wtf.quick_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+          {{ form.csrf_token }}
+          {{ form.title.label }} {{ form.title(size=50) }}
+          {{ form.description.label }} {{ form.description(size=100) }}
+          {{ form.file_url.label }} {{ form.file_url }}
+          <input type="submit" value="Add Document">
+        </form>
       </div>
     </div>
   </div>
