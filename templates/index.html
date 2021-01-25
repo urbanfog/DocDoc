@@ -30,7 +30,7 @@
                   </div>
                   <div class="col-6 col-12-xsmall">
                     <form method="POST" action={{ url_for('delete_document') }}>
-                      <input type=hidden name=key value={{ doc.file_url }}>
+                      <input type=hidden name=id value={{ doc.id }}>
                       <button type="submit"><i class="fa fa-trash"></i></button>
                     </form>
                   </div>

@@ -14,10 +14,8 @@ import os
 import boto3
 
 # TODO
-# Delete files
 # Add tags
 # Search tags
-# Add teams model and add to users
 
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
@@ -73,9 +71,19 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(100))
     name = db.Column(db.String(100))
     documents = db.relationship("Document", backref="created_by")
+    teams = db.relationship("Team", backref="includes_users")
 
     def __repr__(self):
         return '<User {}>'.format(self.name)
+
+
+class Team(db.Model):
+    __tablename__ = "teams"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+
+    def __repr__(self):
+        return '<Team {}>'.format(self.id)
 
 
 class Document(db.Model):
@@ -95,8 +103,13 @@ class Document(db.Model):
 # db.drop_all()
 # db.create_all()
 
+# new_team = Team(
+#     id=1,
+# )
+
 # new_user = User(
 #     id=1,
+#     team=1,
 #     email='james@james.com',
 #     name='james',
 #     password='james',
@@ -314,9 +327,10 @@ def edit_document(document_id):
     return render_template("make-document.html", form=edit_form, is_edit=True, current_user=current_user)
 
 
-@ app.route("/delete", methods=["POST"])
-def delete_document(document_id):
-    doc = Document.query.get(document_id)
+@app.route("/delete", methods=["POST"])
+def delete_document():
+    id = request.form['id']
+    doc = Document.query.get(id)
     s3_key = doc.file_url
     s3_resource = boto3.resource('s3')
     my_bucket = s3_resource.Bucket(AWS_BUCKET_NAME)
