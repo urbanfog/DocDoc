@@ -14,7 +14,11 @@ import os
 import boto3
 
 # TODO
-# Search doc attributes
+# Delete files
+# Add tags
+# Search tags
+# Add teams model and add to users
+
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
@@ -257,11 +261,14 @@ def upload_file_to_s3(file, bucket_name):
     # return f"https://{AWS_BUCKET_NAME}.s3-us-west-2.amazonaws.com/{file.filename}"
 
 
-@ app.route("/download/<int:id>", methods=['POST'])
-def download(id):
+@ app.route("/download", methods=['POST'])
+def download():
+    id = request.form['id']
     document = Document.query.get(id)
     key = document.file_url
-    file_obj = s3.download_file(AWS_BUCKET_NAME, key, key)
+    s3_resource = boto3.resource('s3')
+    my_bucket = s3_resource.Bucket(AWS_BUCKET_NAME)
+    file_obj = my_bucket.Object(key).get()
 
     return Response(
         file_obj['Body'].read(),

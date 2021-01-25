@@ -23,8 +23,8 @@
               <td>
                 <div class="row gtr-uniform">
                   <div class="col-6 col-12-xsmall">
-                    <form method="POST" action={{ url_for('download',id=doc.id) }}>
-                      <input type=hidden name=key value={{ doc.file_url }}>
+                    <form method="POST" action={{ url_for('download') }}>
+                      <input type=hidden name=id value={{ doc.id }}>
                       <button type="submit"><i class="fa fa-download"></i></button>
                     </form>
                   </div>
