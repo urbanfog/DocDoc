@@ -1,47 +1,50 @@
-{% extends 'bootstrap/base.html' %}
+{% extends 'base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
 
 {% block content %}
-{% include "header.html" %}
-  <!-- Page Header -->
-  <header class="masthead" style="background-image: url({{ url_for('static', filename='img/edit-bg.jpg') }}')">
-    <div class="overlay"></div>
-    <div class="container">
-      <div class="row">
-        <div class="col-lg-8 col-md-10 mx-auto">
-          <div class="page-heading">
-            {% if is_edit: %}
-            <h1>Edit Document</h1>
-            {% else: %}
-            <h1>Upload New Document</h1>
-            {% endif %}
+<!-- Banner -->
+<section id="banner">
+	<div class="content">
+		<header>
+			{% if is_edit: %}
+      <h1>Edit Document</h1>
+      {% else: %}
+      <h1>New Document</h1>
+      {% endif %}
+    </header>
+  <!-- Main Content -->
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-md-10 mx-auto content">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+              <form action="/new-document" method="post" enctype="multipart/form-data" novalidate="True">
+                {{ form.csrf_token }}
+                {{ form.title.label }} {{ form.title(size=50) }}
+                <br/>
+                {{ form.description.label }} {{ form.description(size=100) }}
+                <br/>
+                {{ form.file_url.label }} {{ form.file_url }}
+                <br/>
+                {% if is_edit: %}
+                <input type="submit" value="Edit Document">
+                {% else: %}
+                <input type="submit" value="Add Document">
+                {% endif %}
+              </form>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </header>
-
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-md-10 mx-auto">
-        <form action="/new-document" method="post" enctype="multipart/form-data" novalidate="True">
-          {% with messages = get_flashed_messages() %}
-            {% if messages %}
-              {% for message in messages %}
-              <p>{{ message }}</p>
-              {% endfor %}
-            {% endif %}
-          {% endwith %}
-
-          {{ form.csrf_token }}
-          {{ form.title.label }} {{ form.title(size=50) }}
-          {{ form.description.label }} {{ form.description(size=100) }}
-          {{ form.file_url.label }} {{ form.file_url }}
-          <input type="submit" value="Add Document">
-        </form>
-      </div>
-    </div>
   </div>
-
-{% include "footer.html" %}
+</section>
 {% endblock %}

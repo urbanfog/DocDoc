@@ -1,58 +1,46 @@
-{% include "header.html" %}
+{% extends 'base.html' %}
 
-  <!-- Page Header -->
-  <header class="masthead" style="background-image: url('https://images.unsplash.com/photo-1470092306007-055b6797ca72?ixlib=rb-1.2.1&auto=format&fit=crop&w=668&q=80')">
-    <div class="overlay"></div>
-    <div class="container">
-      <div class="row">
-        <div class="col-lg-8 col-md-10 mx-auto">
-          <div class="site-heading">
-            <h1>Angela's Blog</h1>
-            <span class="subheading">A collection of random musings.</span>
-          </div>
-        </div>
+{% block content %}
+<body class="is-preload">
+  <div class="content">
+    <h1>Documents</h1>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Uploaded Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for doc in all_documents %}
+            <tr>
+              <td>{{ doc.title }}</td>
+              <td>{{ doc.description }}</td>
+              <td>{{ doc.upload_date }}</td>
+              <td>
+                <div class="row gtr-uniform">
+                  <div class="col-6 col-12-xsmall">
+                    <form method="POST" action={{ url_for('download',id=doc.id) }}>
+                      <input type=hidden name=key value={{ doc.file_url }}>
+                      <button type="submit"><i class="fa fa-download"></i></button>
+                    </form>
+                  </div>
+                  <div class="col-6 col-12-xsmall">
+                    <form method="POST" action={{ url_for('delete_document') }}>
+                      <input type=hidden name=key value={{ doc.file_url }}>
+                      <button type="submit"><i class="fa fa-trash"></i></button>
+                    </form>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-md-10 mx-auto">
-        {% if not results %}
-        <h2 class="doc-title">No documents found</h2>
-        {% endif %}
-        {% for doc in results %}
-
-        <div class="doc-preview">
-          <a href="{{ url_for('show_document', document_id=doc.id) }}">
-            <h2 class="doc-title">
-              {{doc.title}}
-            </h2>
-            <h3 class="doc-subtitle">
-              {{doc.description}}
-            </h3>
-          </a>
-          <p class="doc-meta">doced by
-            {{doc.create_user_id.name}}
-            on {{doc.upload_date}}
-            {% if current_user.id == 1: %}
-            <a href="{{url_for('delete_doc', doc_id=doc.id) }}">✘</a>
-            {% endif %}
-          </p>
-        </div>
-        {% endfor %}
-
-
-        <!-- New doc -->
-        {% if current_user.id == 1: %}
-        <div class="clearfix">
-          <a class="btn btn-primary float-right" href="{{url_for('add_new_doc')}}">Create New doc</a>
-        </div>
-        {% endif %}
-      </div>
-    </div>
   </div>
-  <hr>
-
-{% include "footer.html" %}
+</body>
+{% endblock %}

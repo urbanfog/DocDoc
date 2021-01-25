@@ -1,31 +1,33 @@
-{% extends 'bootstrap/base.html' %}
-{% import "bootstrap/wtf.html" as wtf %}
+{% extends 'base.html' %}
 
 {% block content %}
-{% include "header.html" %}
-
-  <!-- Page Header -->
-  <header class="masthead" style="background-image: url('https://images.unsplash.com/photo-1531592937781-344ad608fabf?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80')">
-    <div class="overlay"></div>
-    <div class="container">
-      <div class="row">
-        <div class="col-lg-8 col-md-10 mx-auto">
-          <div class="page-heading">
-            <h1>Register</h1>
-            <span class="subheading">Start Contributing to the Blog!</span>
-          </div>
-        </div>
-      </div>
+<!-- Banner -->
+<section id="banner">
+	<div class="content">
+		<header>
+			<h1>Register</h1>
+    </header>
+    <div class="content">
+      <span class="subheading">Create an account</span>
     </div>
-  </header>
-
+  <!-- Main Content -->
   <div class="container">
     <div class="row">
-      <div class="col-lg-8 col-md-10 mx-auto">
-        {{ wtf.quick_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+
+      <div class="col-lg-8 col-md-10 mx-auto content">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <br/>
+        <form action="/login" method="post">
+          {{ wtf.quick_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+        </form>
       </div>
     </div>
   </div>
-
-{% include "footer.html" %}
+</section>
 {% endblock %}

@@ -11,7 +11,6 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, cur
 from werkzeug.utils import secure_filename
 from forms import LoginForm, RegisterForm, CreateDocumentForm, SearchForm
 import os
-from storage import upload_file, download_file, list_files
 import boto3
 
 # TODO
@@ -232,17 +231,9 @@ def show_document(document_id):
     return render_template("document.html", document=requested_document, current_user=current_user)
 
 
-@app.route("/storage")
-def storage():
-    contents = list_files("docdoczilla")
-    print(contents)
-    return render_template('storage.html', contents=contents)
-
-
 def validate_and_upload(file):
     file.filename = secure_filename(file.filename)
     output = upload_file_to_s3(file, AWS_BUCKET_NAME)
-    print(file.filename)
     return str(output)
 
 
@@ -262,16 +253,15 @@ def upload_file_to_s3(file, bucket_name):
     except Exception as e:
         print("Something Happened: ", e)
         return e
-    return f"https://{AWS_BUCKET_NAME}.s3-us-west-2.amazonaws.com/{file.filename}"
+    return str(file.filename)
+    # return f"https://{AWS_BUCKET_NAME}.s3-us-west-2.amazonaws.com/{file.filename}"
 
 
-@ app.route("/download", methods=['POST'])
-def download():
-    key = request.form['key']
-    s3_resource = boto3.resource('s3')
-    my_bucket = s3_resource.Bucket(AWS_BUCKET_NAME)
-
-    file_obj = my_bucket.Object(key).get()
+@ app.route("/download/<int:id>", methods=['POST'])
+def download(id):
+    document = Document.query.get(id)
+    key = document.file_url
+    file_obj = s3.download_file(AWS_BUCKET_NAME, key, key)
 
     return Response(
         file_obj['Body'].read(),
