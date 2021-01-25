@@ -39,6 +39,16 @@
 										<li><a href="#" class="icon brands fa-medium-m"><span class="label">Medium</span></a></li>
 									</ul>
 								</header>
+								{% with messages = get_flashed_messages() %}
+									{% if messages %}
+									<br/>
+										{% for message in messages %}
+										<div class="box">
+											<p>{{ message }}</p>
+										</div>
+										{% endfor %}
+									{% endif %}
+								{% endwith %}
 								{% block content %}	{% endblock %}
 						</div>
 					</div>

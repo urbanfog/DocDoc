@@ -15,13 +15,6 @@
     <div class="row">
 
       <div class="col-lg-8 col-md-10 mx-auto content">
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for message in messages %}
-            <p>{{ message }}</p>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
         <form action="/login" method="post" novalidate='True'>
           {{ form.csrf_token }}
           {{ form.name.label }} {{ form.name(size=50) }}
