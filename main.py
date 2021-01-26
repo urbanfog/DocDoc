@@ -292,7 +292,7 @@ def add_document():
         )
         db.session.add(new_document)
         db.session.commit()
-        return render_template("index.html")
+        return redirect(url_for("get_all_documents"))
 
     return render_template("make-document.html", form=form, current_user=current_user)
 
