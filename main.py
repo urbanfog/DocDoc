@@ -85,8 +85,8 @@ class Document(db.Model):
 
 
 # DB seed stuff
-# db.drop_all()
-# db.create_all()
+db.drop_all()
+db.create_all()
 
 
 # new_user = User(
