@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, abort, request, send_from_directory, send_file, Response
+from flask import Flask, render_template, redirect, url_for, flash, abort, request, send_from_directory, send_file, Response, g
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
 from datetime import date, datetime
@@ -12,10 +12,6 @@ from werkzeug.utils import secure_filename
 from forms import LoginForm, RegisterForm, CreateDocumentForm, SearchForm
 import os
 import boto3
-
-# TODO
-# Add tags
-# Search tags
 
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
@@ -61,8 +57,6 @@ s3 = boto3.client(
     aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
 )
 
-# CONFIGURE TABLE
-
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
@@ -71,19 +65,9 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(100))
     name = db.Column(db.String(100))
     documents = db.relationship("Document", backref="created_by")
-    teams = db.relationship("Team", backref="includes_users")
 
     def __repr__(self):
         return '<User {}>'.format(self.name)
-
-
-class Team(db.Model):
-    __tablename__ = "teams"
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-
-    def __repr__(self):
-        return '<Team {}>'.format(self.id)
 
 
 class Document(db.Model):
@@ -94,6 +78,7 @@ class Document(db.Model):
     description = db.Column(db.String(250), nullable=False)
     upload_date = db.Column(db.String(250), nullable=False)
     file_url = db.Column(db.String(250), nullable=False)
+    tags = db.Column(db.String(250), unique=False, nullable=True)
 
     def __repr__(self):
         return '<Document {}>'.format(self.title)
@@ -103,13 +88,9 @@ class Document(db.Model):
 # db.drop_all()
 # db.create_all()
 
-# new_team = Team(
-#     id=1,
-# )
 
 # new_user = User(
 #     id=1,
-#     team=1,
 #     email='james@james.com',
 #     name='james',
 #     password='james',
@@ -120,11 +101,17 @@ class Document(db.Model):
 #     title='Test',
 #     description='Test',
 #     upload_date=datetime.today(),
-#     file_url='https://docdoczilla.s3-us-west-2.amazonaws.com/coffee.jpg',
+#     file_url='coffee.jpg',
+#     tags='new'
 # )
 # db.session.add(new_user)
 # db.session.add(new_doc)
 # db.session.commit()
+
+
+@app.before_request
+def before_request():
+    g.search_form = SearchForm()
 
 
 def admin_only(f):
@@ -145,20 +132,7 @@ def elements():
 
 @app.route('/', methods=["GET"])
 def landing():
-    form = SearchForm()
-    if form.validate():
-        search_string = form.search_query.data
-        results = Document.query.filter(
-            # or_(
-            # Document.title.like(f"%search_string%"),
-            Document.description.like('%' + search_string + '%'),
-            # )
-        )
-        print(search_string)
-        print(results)
-        return redirect(url_for("get_all_documents", results=results))
-    print(form.errors)
-    return render_template("landing.html", form=form)
+    return render_template("landing.html")
 
 
 @app.route('/register', methods=["GET", "POST"])
@@ -236,13 +210,26 @@ def edit_user(user_id):
     return render_template("register.html", form=edit_form, is_edit=True, current_user=current_user)
 
 
-@app.route('/documents')
+@app.route('/documents', methods=["GET"])
 def get_all_documents():
     documents = Document.query.all()
-    return render_template("index.html", all_documents=documents, current_user=current_user)
+    print(documents)
+    return render_template("index.html", form=g.search_form, documents=documents, current_user=current_user)
 
 
-@app.route("/document/<int:document_id>", methods=["GET", "POST"])
+@app.route('/search', methods=["GET", "POST"])
+def search():
+    if g.search_form.validate():
+        search_string = g.search_form.query.data
+        print(search_string)
+        results = Document.query.filter(
+            Document.tags.like('%' + search_string + '%'))
+        return render_template("index.html", form=g.search_form, documents=results, current_user=current_user)
+    print(g.search_form.errors)
+    return redirect(url_for("get_all_documents"))
+
+
+@ app.route("/document/<int:document_id>", methods=["GET", "POST"])
 def show_document(document_id):
     requested_document = Document.query.get(document_id)
     return render_template("document.html", document=requested_document, current_user=current_user)
@@ -291,6 +278,7 @@ def download():
 
 
 @ app.route("/new-document", methods=["GET", "POST"])
+@login_required
 def add_document():
     form = CreateDocumentForm()
     if request.method == 'POST':
@@ -304,7 +292,7 @@ def add_document():
         )
         db.session.add(new_document)
         db.session.commit()
-        return redirect(url_for("get_all_documents"))
+        return render_template("index.html")
 
     return render_template("make-document.html", form=form, current_user=current_user)
 
@@ -327,7 +315,7 @@ def edit_document(document_id):
     return render_template("make-document.html", form=edit_form, is_edit=True, current_user=current_user)
 
 
-@app.route("/delete", methods=["POST"])
+@ app.route("/delete", methods=["POST"])
 def delete_document():
     id = request.form['id']
     doc = Document.query.get(id)

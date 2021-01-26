@@ -68,6 +68,7 @@
 											<li><a href={{ url_for('edit_user',user_id=current_user.id) }}>User Profile</a></li>
 										{% endif %}
 										<li><a href={{ url_for('get_all_documents') }}>All Documents</a></li>
+										<li><a href={{ url_for('add_document') }}>Add Document</a></li>
 										<!-- <li>
 											<span class="opener">Submenu</span>
 											<ul>
@@ -125,7 +126,9 @@
 									</header>
 									<p>Send me a message on LinkedIn</p>
 									<ul class="contact">
-										<li class="icon solid fa-linkedin"><a href="https://www.linkedin.com/in/james-c-smith1/">James Smith</a></li>
+										<li>
+											<i class="fa fa-linkedin-square" aria-hidden="true"></i><a href="https://www.linkedin.com/in/james-c-smith1/">James Smith</a>
+										</li>
 									</ul>
 								</section>
 
