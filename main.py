@@ -27,13 +27,13 @@ app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
 
 is_prod = os.environ.get('IS_HEROKU', None)
 if is_prod:
-    API_SECRET_KEY = os.getenv('API_SECRET_KEY')
+    APP_SECRET_KEY = os.getenv('APP_SECRET_KEY')
 else:
     from dotenv import load_dotenv, find_dotenv
     load_dotenv(find_dotenv(), override=True)
-    API_SECRET_KEY = os.getenv('APP_SECRET_KEY')
+    APP_SECRET_KEY = os.getenv('APP_SECRET_KEY')
 
-app.config['SECRET_KEY'] = API_SECRET_KEY
+app.config['SECRET_KEY'] = APP_SECRET_KEY
 ckeditor = CKEditor(app)
 Bootstrap(app)
 
